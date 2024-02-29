@@ -5,15 +5,15 @@
   "main": "server.js",
   "scripts": {
     "build": "npx tsc",
-    "start": "node dist/server.ts",
-    "dev": "nodemon src/server.ts"
+    "start": "tsup src && node dist/server.ts",
+    "dev": "tsx watch src/server.ts"
   },
   "dependencies": {
     "@types/node": "^20.11.22",
     "@types/pg": "^8.11.2",
-    "nodemon": "^3.1.0",
-    "pg": "^8.11.3",
-    "ts-node": "^10.9.2",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
     "tsup": "^8.0.2",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3"
