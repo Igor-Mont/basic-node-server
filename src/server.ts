@@ -17,24 +17,20 @@ client
 const server = createServer(
   async (request: IncomingMessage, response: ServerResponse) => {
     if (request.method === "GET") {
-      console.log("GET");
-
       try {
         const { rows } = await client.query(
           "SELECT * FROM bilheteriadigital.administradores"
         );
         response.writeHead(200, { "Content-Type": "application/json" });
-        response.end(JSON.stringify(rows));
+        return response.end(JSON.stringify(rows));
       } catch (error) {
         console.error(error);
         response.writeHead(500, { "Content-Type": "text/plain" });
-        response.end("Internal Server Error");
+        return response.end("Internal Server Error");
       }
     }
 
     if (request.method === "POST") {
-      console.log("POST");
-
       let body = "";
       request.on("data", (chunk) => {
         body += chunk.toString();
@@ -79,14 +75,32 @@ const server = createServer(
           ];
 
           await client.query(insertQuery, values);
+          const insertedData = await client.query(
+            `SELECT * FROM bilheteriadigital.administradores WHERE id = $1`,
+            [values[0]]
+          );
+          const newAdm = insertedData.rows[0];
+
           response.writeHead(200, { "Content-Type": "application/json" });
-          response.end(JSON.stringify(data));
+          return response.end(JSON.stringify(newAdm));
         } catch (error) {
           console.error(error);
           response.writeHead(500, { "Content-Type": "text/plain" });
-          response.end("Internal Server Error");
+          return response.end("Internal Server Error");
         }
       });
+    }
+
+    if (request.method === "DELETE") {
+      try {
+        await client.query("DELETE FROM bilheteriadigital.administradores");
+        response.statusCode = 200;
+        return response.end();
+      } catch (error) {
+        console.error(error);
+        response.writeHead(500, { "Content-Type": "text/plain" });
+        return response.end("Internal Server Error");
+      }
     }
   }
 );
