@@ -1,4 +1,4 @@
-import { createServer } from "node:http";
+import { createServer, IncomingMessage, ServerResponse } from "http";
 import { Client } from "pg";
 
 const client = new Client({
@@ -9,66 +9,74 @@ const client = new Client({
   database: "atividade-3",
 });
 
-const server = createServer((request, response) => {
+client.connect()
+  .then(() => console.log("Connected with database 📦..."))
+  .catch(err => console.error('Error connecting to database', err));
+
+const server = createServer(async (request: IncomingMessage, response: ServerResponse) => {
   if (request.method === "GET") {
     console.log("GET");
-    client.connect().then(() => {
-      client
-        .query("SELECT * FROM bilheteriadigital.administradores")
-        .then((data) => {
-          console.log("data");
-          console.log(data.rows);
-          response.write("test");
-          client.end();
-        });
-    });
 
-    return response.end();
+    try {
+      const { rows } = await client.query("SELECT * FROM bilheteriadigital.administradores");
+      console.log("data");
+      console.log(rows);
+      response.end(JSON.stringify(rows));
+    } catch (error) {
+      console.error(error);
+      response.end("Internal Server Error");
+    }
   }
 
   if (request.method === "POST") {
     console.log("POST");
 
-    client.connect().then(() => {
-      console.log("Connected with database 📦...");
-      const insertQuery = `INSERT INTO bilheteriadigital.administradores (
-        id,
-        email,
-        telefone,
-        primeiro_nome,
-        segundo_nome,
-        cpf,
-        data_de_nascimento
-        ) VALUES (
-          $1,
-          $2,
-          $3,
-          $4,
-          $5,
-          $6,
-          $7
-          );`;
-      const values = [
-        "administrator",
-        "administrator@gmail.com",
-        "21894350",
-        "psodgofd",
-        "podkgpd",
-        23985095,
-        "2024-02-29T12:34:56+00:00",
-      ];
+    let body = "";
+    request.on("data", (chunk) => {
+      body += chunk.toString();
+    });
 
-      client.query(insertQuery, values).then((data) => {
+    request.on("end", async () => {
+      try {
+        const data = JSON.parse(body);
+        const { id, email, telefone, primeiro_nome, segundo_nome, cpf, data_de_nascimento } = data;
+        const insertQuery = `INSERT INTO bilheteriadigital.administradores (
+            id, 
+            email, 
+            telefone, 
+            primeiro_nome, 
+            segundo_nome, 
+            cpf, 
+            data_de_nascimento
+          ) VALUES (
+            $1, 
+            $2, 
+            $3, 
+            $4, 
+            $5, 
+            $6, 
+            $7)`;
+        const values = [
+          id, 
+          email, 
+          telefone, 
+          primeiro_nome, 
+          segundo_nome, 
+          cpf, 
+          data_de_nascimento
+        ];
+
+        await client.query(insertQuery, values);
         console.log(data);
-        response.write(data);
-        client.end();
-      });
-
-      return response.end();
+        response.writeHead(200, { "Content-Type": "text/plain" });
+        response.end("Data inserted successfully");
+      } catch (error) {
+        console.error(error);
+        response.writeHead(500, { "Content-Type": "text/plain" });
+        response.end("Internal Server Error");
+      }
     });
   }
-
-  return response.end();
 });
 
 server.listen(3000, () => {
