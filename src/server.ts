@@ -21,9 +21,11 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
       const { rows } = await client.query("SELECT * FROM bilheteriadigital.administradores");
       console.log("data");
       console.log(rows);
+      response.writeHead(200, { "Content-Type": "application/json" });
       response.end(JSON.stringify(rows));
     } catch (error) {
       console.error(error);
+      response.writeHead(500, { "Content-Type": "text/plain" });
       response.end("Internal Server Error");
     }
   }
@@ -68,7 +70,7 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
 
         await client.query(insertQuery, values);
         console.log(data);
-        response.writeHead(200, { "Content-Type": "text/plain" });
+        response.writeHead(200, { "Content-Type": "application/json" });
         response.end("Data inserted successfully");
       } catch (error) {
         console.error(error);
